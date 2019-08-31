@@ -58,4 +58,4 @@ We can show the `href` attribute instead:
 ## Inspiration
 
 The idea for this as well as the syntax was taken from
-https://github.com/ericchiang/pup, which sadly no longer compiles.
+https://github.com/ericchiang/pup.
