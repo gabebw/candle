@@ -1,3 +1,4 @@
+use regex::Regex;
 use scraper::{Html, Selector};
 use std::env;
 use std::io::{self, Read};
@@ -28,10 +29,21 @@ fn main() {
 
 fn parse(html: &str, selector: &str) -> Result<Vec<String>, String> {
     let document = Html::parse_document(html);
-    let selector = Selector::parse(selector)
+    let re = Regex::new(r"(?P<selector>.+) (?:(?P<text>\{text\})|(attr\{(?P<attr>[^}]+)\}))$").unwrap();
+    let captures = re.captures(selector).unwrap();
+    let selector = Selector::parse(captures.name("selector").unwrap().as_str())
         .map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?;
+    let selected = document.select(&selector);
 
-    Ok(document.select(&selector).map(|element| element.text().collect()).collect())
+    if let Some(_) = captures.name("text") {
+        Ok(selected.map(|element| element.text().collect()).collect())
+    } else if let Some(attr) = captures.name("attr") {
+        Ok(selected
+            .filter_map(|element| element.value().attr(attr.as_str()).map(|s| s.to_string()))
+            .collect())
+    } else {
+        Err("Please specify {text} or attr{ATTRIBUTE}".to_string())
+    }
 }
 
 #[cfg(test)]
@@ -39,28 +51,41 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_parsing_html_with_selector(){
+    fn test_showing_inner_text(){
         let html = r#"
             <!DOCTYPE html>
             <meta charset="utf-8">
             <title>Hello, world!</title>
             <h1 class="foo">Hello, <i>world!</i></h1>
         "#;
-        let selector = "h1 i";
+        let selector = "h1 i {text}";
         let result = parse(html, selector);
         assert_eq!(result, Ok(vec!("world!".to_string())));
     }
 
     #[test]
-    fn test_parsing_html_with_bad_selector(){
+    fn test_bad_selector(){
         let html = r#"
             <!DOCTYPE html>
             <meta charset="utf-8">
             <title>Hello, world!</title>
             <h1 class="foo">Hello, <i>world!</i></h1>
         "#;
-        let selector = "h1^3";
+        let selector = "h1^3 {text}";
         let err = parse(html, selector).expect_err("not an Err");
         assert_eq!(true, err.starts_with("Bad CSS selector"));
+    }
+
+    #[test]
+    fn test_showing_specific_attr(){
+        let html = r#"
+            <!DOCTYPE html>
+            <meta charset="utf-8">
+            <title>Hello, world!</title>
+            <h1 class="foo">Hello, <i>world!</i></h1>
+        "#;
+        let selector = "h1 attr{class}";
+        let result = parse(html, selector);
+        assert_eq!(result, Ok(vec!("foo".to_string())));
     }
 }
