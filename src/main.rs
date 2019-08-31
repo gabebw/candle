@@ -58,7 +58,7 @@ fn select(document: scraper::Html, captures: regex::Captures) -> Result<Vec<Stri
         .map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?;
     let selected = document.select(&selector);
 
-    if let Some(_) = captures.name("text") {
+    if captures.name("text").is_some() {
         Ok(selected.map(|element| element.text().collect()).collect())
     } else if let Some(attr) = captures.name("attr") {
         Ok(selected
