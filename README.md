@@ -8,7 +8,7 @@ arbitrarily-complex CSS selectors, just like you'd write in real CSS.
 
 ## Installation
 
-On a Mac, no prerequisites at all:
+On a Mac using Homebrew (Rust not required):
 
     brew install https://raw.githubusercontent.com/gabebw/candle/master/homebrew/candle.rb
 
