@@ -9,21 +9,32 @@ use std::process;
 struct Inputs {
     selector: String,
     html: String,
-    raw_bytes: Vec<u8>
 }
 
-fn read_from_stdin() -> Option<(String, Vec<u8>)> {
+fn read_from_stdin() -> Option<String> {
     // It might not be valid UTF-8, so read to a vector of bytes and convert it to UTF-8, lossily
     let mut buffer: Vec<u8> = Vec::new();
     io::stdin().read_to_end(&mut buffer).ok()?;
+    let re_meta_charset = Regex::new(r#"<meta\s+charset=["']([^'"]+)["']"#).unwrap();
     let string = String::from_utf8_lossy(&buffer).to_string();
-    Some((string, buffer))
+    if let Some(captures) = re_meta_charset.captures(&string[..1024]) {
+        let charset = captures.get(1).unwrap().as_str();
+        match Encoding::for_label(charset.as_bytes()) {
+            Some(encoding) => {
+                let string_with_new_encoding = encoding.decode(&buffer).0;
+                Some((*string_with_new_encoding).to_string())
+            }
+            None => Some(string)
+        }
+    } else {
+        Some(string)
+    }
 }
 
 fn read_inputs() -> Result<Inputs, String> {
     let selector = env::args().nth(1).ok_or("Usage: candle SELECTOR")?;
-    let (html, raw_bytes) = read_from_stdin().ok_or("Error: couldn't read from STDIN")?;
-    Ok(Inputs { selector, html, raw_bytes })
+    let html = read_from_stdin().ok_or("Error: couldn't read from STDIN")?;
+    Ok(Inputs { selector, html })
 }
 
 fn main() {
@@ -69,23 +80,8 @@ fn select(document: scraper::Html, captures: regex::Captures) -> Result<Vec<Stri
     }
 }
 
-fn detect_encoding_and_re_parse(document: scraper::Html, inputs: &Inputs) -> scraper::Html {
-    let meta_selector = Selector::parse("meta[charset]").unwrap();
-    // If there's a `<meta charset="...">` tag, re-parse the HTML in that encoding.
-    // Otherwise, keep it exactly the same.
-    if let Some(meta_result) = document.select(&meta_selector).nth(0) {
-        let charset = meta_result.value().attr("charset").unwrap();
-        match Encoding::for_label(charset.as_bytes()) {
-            Some(encoding) => Html::parse_document(&*encoding.decode(&inputs.raw_bytes).0),
-            None => document
-        }
-    } else {
-        document
-    }
-}
-
 fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
-    let document = detect_encoding_and_re_parse(Html::parse_document(&inputs.html), &inputs);
+    let document = Html::parse_document(&inputs.html);
     let re = Regex::new(r"(?P<selector>.+) (?:(?P<text>\{text\})|(attr\{(?P<attr>[^}]+)\}))$").unwrap();
     match re.captures(&inputs.selector) {
         Some(captures) => select(document, captures),
@@ -155,7 +151,6 @@ mod test {
         Inputs {
             html: html.to_string(),
             selector: selector.to_string(),
-            raw_bytes: html.as_bytes().to_vec()
         }
     }
 }
