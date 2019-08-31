@@ -108,7 +108,7 @@ mod test {
             <h1 class="foo">Hello, <i>world!</i></h1>
         "#;
         let selector = "h1 i {text}";
-        let result = parse(html, selector);
+        let result = parse(build_inputs(html, selector));
         assert_eq!(result, Ok(vec!("world!".to_string())));
     }
 
@@ -121,7 +121,7 @@ mod test {
             <h1 class="foo">Hello, <i>world!</i></h1>
         "#;
         let selector = "h1^3 {text}";
-        let err = parse(html, selector).expect_err("not an Err");
+        let err = parse(build_inputs(html, selector)).expect_err("not an Err");
         assert_eq!(true, err.starts_with("Bad CSS selector"));
     }
 
@@ -134,7 +134,7 @@ mod test {
             <h1 class="foo">Hello, <i>world!</i></h1>
         "#;
         let selector = "h1 attr{class}";
-        let result = parse(html, selector);
+        let result = parse(build_inputs(html, selector));
         assert_eq!(result, Ok(vec!("foo".to_string())));
     }
 
@@ -147,7 +147,15 @@ mod test {
             <h1 class="foo">Hello, <i>world!</i></h1>
         "#;
         let selector = "h1";
-        let result = parse(html, selector);
+        let result = parse(build_inputs(html, selector));
         assert_eq!(result, Err("Please specify {text} or attr{ATTRIBUTE}".to_string()));
+    }
+
+    fn build_inputs(html: &str, selector: &str) -> Inputs {
+        Inputs {
+            html: html.to_string(),
+            selector: selector.to_string(),
+            raw_bytes: html.as_bytes().to_vec()
+        }
     }
 }
