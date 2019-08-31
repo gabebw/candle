@@ -1,3 +1,4 @@
+use isatty::stdin_isatty;
 use regex::Regex;
 use scraper::{Html, Selector};
 use std::env;
@@ -23,6 +24,11 @@ fn read_inputs() -> Result<Inputs, String> {
 }
 
 fn main() {
+    if stdin_isatty() {
+        eprintln!("You must pipe in input to candle");
+        process::exit(1);
+    }
+
     match read_inputs() {
         Ok(inputs) => {
             match parse(&inputs.html, &inputs.selector) {
