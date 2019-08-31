@@ -36,3 +36,8 @@ Let's show the `href` attribute instead:
     https://www.experienceuhd.com/filmmakermode
     https://www.apple.com/newsroom/2019/08/apple-offers-customers-even-more-options-for-safe-reliable-repairs/
     https://www.loopinsight.com/2019/08/29/apple-sends-invite-for-september-10-event/
+
+## Inspiration
+
+The idea for this as well as the syntax was taken from
+https://github.com/ericchiang/pup, which sadly no longer compiles.
