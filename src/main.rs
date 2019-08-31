@@ -2,6 +2,12 @@ use regex::Regex;
 use scraper::{Html, Selector};
 use std::env;
 use std::io::{self, Read};
+use std::process;
+
+struct Inputs {
+    selector: String,
+    html: String
+}
 
 fn read_from_stdin() -> Option<String> {
     // It might not be valid UTF-8, so read to a vector of bytes and convert it to UTF-8, lossily
@@ -10,20 +16,31 @@ fn read_from_stdin() -> Option<String> {
     Some(String::from_utf8_lossy(&buffer).to_string())
 }
 
-fn main() {
-    let selector = env::args().nth(1).unwrap();
+fn read_inputs() -> Result<Inputs, String> {
+    let selector = env::args().nth(1).ok_or("Usage: candle SELECTOR")?;
+    let html = read_from_stdin().ok_or("Error: couldn't read from STDIN")?;
+    Ok(Inputs { selector, html })
+}
 
-    if let Some(html) = read_from_stdin() {
-        match parse(&html, &selector) {
-            Ok(result) => {
-                for r in result {
-                    println!("{}", &r.trim());
+fn main() {
+    match read_inputs() {
+        Ok(inputs) => {
+            match parse(&inputs.html, &inputs.selector) {
+                Ok(result) => {
+                    for r in result {
+                        println!("{}", &r.trim());
+                    }
+                },
+                Err(e) => {
+                    eprintln!("{}", e);
+                    process::exit(1);
                 }
-            },
-            Err(e) => eprintln!("{}", e)
+            }
+        },
+        Err(e) => {
+            eprintln!("{}", e);
+            process::exit(1);
         }
-    } else {
-        eprintln!("Couldn't read from STDIN");
     }
 }
 
