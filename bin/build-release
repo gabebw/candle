@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -eo pipefail
+
+candle_version=$(grep 'version =' Cargo.toml | sed -e 's/version = //' -e 's/"//g')
+name="candle-${candle_version}"
+
+export MACOSX_DEPLOYMENT_TARGET=10.7
+export TARGET=x86_64-apple-darwin
+
+cargo build --release --target "$TARGET" --locked
+
+mkdir -p releases
+rm -rf releases/"$name"
+cd releases
+mkdir "$name"
+cp ../target/$TARGET/release/candle "$name"
+tar czvf "$name".tar.gz "$name"
+rm -rf "$name"

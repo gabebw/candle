@@ -4,6 +4,13 @@ Shine a little light on your HTML.
 
 ## Installation
 
+On a Mac, no prerequisites at all:
+
+    brew install https://raw.githubusercontent.com/gabebw/candle/master/homebrew/candle.rb
+
+Or to build from source (requires the Rust package manager,
+[Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)):
+
     cargo install --git https://github.com/gabebw/candle
 
 The binary is called `candle`.
