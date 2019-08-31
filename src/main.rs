@@ -44,25 +44,27 @@ fn main() {
     }
 }
 
+fn select(document: scraper::Html, captures: regex::Captures) -> Result<Vec<String>, String> {
+    let selector = Selector::parse(captures.name("selector").unwrap().as_str())
+        .map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?;
+    let selected = document.select(&selector);
+
+    if let Some(_) = captures.name("text") {
+        Ok(selected.map(|element| element.text().collect()).collect())
+    } else if let Some(attr) = captures.name("attr") {
+        Ok(selected
+            .filter_map(|element| element.value().attr(attr.as_str()).map(|s| s.to_string()))
+            .collect())
+    } else {
+        Err("Unknown request".to_string())
+    }
+}
+
 fn parse(html: &str, selector: &str) -> Result<Vec<String>, String> {
     let document = Html::parse_document(html);
     let re = Regex::new(r"(?P<selector>.+) (?:(?P<text>\{text\})|(attr\{(?P<attr>[^}]+)\}))$").unwrap();
     match re.captures(selector) {
-        Some(captures) => {
-            let selector = Selector::parse(captures.name("selector").unwrap().as_str())
-                .map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?;
-            let selected = document.select(&selector);
-
-            if let Some(_) = captures.name("text") {
-                Ok(selected.map(|element| element.text().collect()).collect())
-            } else if let Some(attr) = captures.name("attr") {
-                Ok(selected
-                    .filter_map(|element| element.value().attr(attr.as_str()).map(|s| s.to_string()))
-                    .collect())
-            } else {
-                Err("Unknown request".to_string())
-            }
-        },
+        Some(captures) => select(document, captures),
         None => {
             Err("Please specify {text} or attr{ATTRIBUTE}".to_string())
         }
