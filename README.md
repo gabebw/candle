@@ -1,6 +1,10 @@
 # Candle
 
-Shine a little light on your HTML.
+Candle lets you use CSS selectors to slice and dice any HTML on the command
+line. Just pipe in any HTML and tell Candle what to do with it.
+
+Because candle uses Firefox's real-world CSS parsing engine, you can pass it
+arbitrarily-complex CSS selectors, just like you'd write in real CSS.
 
 ## Installation
 
@@ -17,12 +21,21 @@ The binary is called `candle`.
 
 ## Usage
 
-You should pipe HTML to `candle`, then tell it what to do with it using CSS.
+Let's start small:
 
-Because candle uses Firefox's real-world CSS parsing engine, you can pass it
-arbitrarily-complex CSS selectors, just like you'd write in real CSS.
+    echo "<h1 class='bar'>foo <span>and foo</span></h1>" | candle 'h1 {text}'
+    foo and foo
 
-Let's show the inner text for some elements:
+The `{text}` at the end of the selector means "show me the inner text for what was selected".
+
+Let's get an attribute:
+
+    echo "<h1 class='bar'>foo <span>and foo</span></h1>" | candle 'h1 attr{class}'
+    bar
+
+To get an attribute, use `attr{ATTRIBUTE_NAME}`.
+
+Now let's parse a real webpage:
 
     curl https://daringfireball.net | candle 'dl.linkedlist dt a:not([title]) {text}'
 
@@ -32,9 +45,7 @@ Let's show the inner text for some elements:
     Apple Expands Third-Party Repair Program
     Apple Sends Invitations for September 10 Event
 
-The `{text}` at the end means "show me the inner text for what was selected".
-
-Let's show the `href` attribute instead:
+We can show the `href` attribute instead:
 
     curl https://daringfireball.net | candle 'dl.linkedlist dt a:not([title]) attr{href}'
 
