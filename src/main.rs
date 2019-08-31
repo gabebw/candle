@@ -31,7 +31,7 @@ fn main() {
 
     match read_inputs() {
         Ok(inputs) => {
-            match parse(&inputs.html, &inputs.selector) {
+            match parse(inputs) {
                 Ok(result) => {
                     for r in result {
                         println!("{}", &r.trim());
@@ -66,10 +66,10 @@ fn select(document: scraper::Html, captures: regex::Captures) -> Result<Vec<Stri
     }
 }
 
-fn parse(html: &str, selector: &str) -> Result<Vec<String>, String> {
-    let document = Html::parse_document(html);
+fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
+    let document = Html::parse_document(&inputs.html);
     let re = Regex::new(r"(?P<selector>.+) (?:(?P<text>\{text\})|(attr\{(?P<attr>[^}]+)\}))$").unwrap();
-    match re.captures(selector) {
+    match re.captures(&inputs.selector) {
         Some(captures) => select(document, captures),
         None => {
             Err("Please specify {text} or attr{ATTRIBUTE}".to_string())
