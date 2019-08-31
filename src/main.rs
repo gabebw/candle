@@ -47,19 +47,25 @@ fn main() {
 fn parse(html: &str, selector: &str) -> Result<Vec<String>, String> {
     let document = Html::parse_document(html);
     let re = Regex::new(r"(?P<selector>.+) (?:(?P<text>\{text\})|(attr\{(?P<attr>[^}]+)\}))$").unwrap();
-    let captures = re.captures(selector).unwrap();
-    let selector = Selector::parse(captures.name("selector").unwrap().as_str())
-        .map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?;
-    let selected = document.select(&selector);
+    match re.captures(selector) {
+        Some(captures) => {
+            let selector = Selector::parse(captures.name("selector").unwrap().as_str())
+                .map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?;
+            let selected = document.select(&selector);
 
-    if let Some(_) = captures.name("text") {
-        Ok(selected.map(|element| element.text().collect()).collect())
-    } else if let Some(attr) = captures.name("attr") {
-        Ok(selected
-            .filter_map(|element| element.value().attr(attr.as_str()).map(|s| s.to_string()))
-            .collect())
-    } else {
-        Err("Please specify {text} or attr{ATTRIBUTE}".to_string())
+            if let Some(_) = captures.name("text") {
+                Ok(selected.map(|element| element.text().collect()).collect())
+            } else if let Some(attr) = captures.name("attr") {
+                Ok(selected
+                    .filter_map(|element| element.value().attr(attr.as_str()).map(|s| s.to_string()))
+                    .collect())
+            } else {
+                Err("Unknown request".to_string())
+            }
+        },
+        None => {
+            Err("Please specify {text} or attr{ATTRIBUTE}".to_string())
+        }
     }
 }
 
@@ -104,5 +110,18 @@ mod test {
         let selector = "h1 attr{class}";
         let result = parse(html, selector);
         assert_eq!(result, Ok(vec!("foo".to_string())));
+    }
+
+    #[test]
+    fn test_no_text_or_attr_specification(){
+        let html = r#"
+            <!DOCTYPE html>
+            <meta charset="utf-8">
+            <title>Hello, world!</title>
+            <h1 class="foo">Hello, <i>world!</i></h1>
+        "#;
+        let selector = "h1";
+        let result = parse(html, selector);
+        assert_eq!(result, Err("Please specify {text} or attr{ATTRIBUTE}".to_string()));
     }
 }
