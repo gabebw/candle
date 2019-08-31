@@ -1,10 +1,10 @@
 class Candle < Formula
-  version "0.2.0"
+  version "0.3.0"
   desc "Shine a little light on your HTML using the command line"
   homepage "https://github.com/gabebw/candle"
 
   url "https://github.com/gabebw/candle/releases/download/v#{version}/candle-#{version}.tar.gz"
-  sha256 "fdf90f2fa96c30fb8f62768cc755cef69793d1880e810234f9fc0f2857f2c3eb"
+  sha256 "cc0e7aa2bb5600992da87d65ea1c39b20d2d7fa1b5cf8bfb2b5f558ba531ae56"
 
   def install
     bin.install "candle"
