@@ -109,7 +109,19 @@ fn select_all(html: Html, finders: &[Finder]) -> Vec<String> {
 
 fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
     let document = Html::parse_document(&inputs.html);
-    let re = Regex::new(r"(?P<selector>[^{}]+) (?:(?P<text>\{text\})|(?P<html>\{html\})|(attr\{(?P<attr>[^}]+)\}))[,]?\s*").unwrap();
+    let re = Regex::new(r"(?x)
+        (?P<selector>[^{}]+)
+        (?:
+            (?P<text>\{text\})
+            |
+            (?P<html>\{html\})
+            |
+            (attr\{
+                (?P<attr>[^}]+)
+            \})
+        )
+        [,]?\s*
+    ").unwrap();
     let mut finders: Vec<Finder> = Vec::new();
     for c in re.captures_iter(&inputs.selector) {
         let selector_str = c.name("selector").unwrap().as_str();
