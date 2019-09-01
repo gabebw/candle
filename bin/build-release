@@ -8,12 +8,16 @@ name="candle-${candle_version}"
 export MACOSX_DEPLOYMENT_TARGET=10.7
 export TARGET=x86_64-apple-darwin
 
-cargo build --release --target "$TARGET" --locked
+cargo build --quiet --release --target "$TARGET" --locked
 
 mkdir -p releases
 rm -rf releases/"$name"
 cd releases
 mkdir "$name"
 cp ../target/$TARGET/release/candle "$name"
-tar czvf "$name".tar.gz "$name"
+tar czf "$name".tar.gz "$name"
 rm -rf "$name"
+
+echo "Version: $candle_version"
+echo "Sha256 sum:"
+sha256sum "$name".tar.gz | cut -d ' ' -f1
