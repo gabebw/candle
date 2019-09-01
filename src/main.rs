@@ -83,7 +83,7 @@ fn main() {
     }
 }
 
-fn select_all<'a>(html: Html, finders: &[Finder]) -> Vec<String> {
+fn select_all(html: Html, finders: &[Finder]) -> Vec<String> {
     let mut results: Vec<String> = Vec::new();
     for node in html.tree.nodes().by_ref() {
 	if let Some(element) = ElementRef::wrap(node) {
