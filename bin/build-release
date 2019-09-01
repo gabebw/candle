@@ -8,7 +8,7 @@ name="candle-${candle_version}"
 export MACOSX_DEPLOYMENT_TARGET=10.7
 export TARGET=x86_64-apple-darwin
 
-cargo build --quiet --release --target "$TARGET" --locked
+cargo build --release --target "$TARGET" --locked
 
 mkdir -p releases
 rm -rf releases/"$name"
