@@ -1,7 +1,7 @@
 use encoding_rs::Encoding;
 use isatty::stdin_isatty;
 use regex::Regex;
-use scraper::{ElementRef, Html, Selector};
+use scraper::{ElementRef, Html, Node, Selector};
 use std::cmp;
 use std::env;
 use std::io::{self, Read};
@@ -25,12 +25,52 @@ struct Finder<'a> {
     operation: FinderOperation<'a>,
 }
 
+fn print_tree(element: Option<ElementRef>, indent_level: usize) -> String {
+    let mut s = String::new();
+    let number_of_spaces_per_level = 2;
+    let indent = format!("{:n$}", "", n=(indent_level * number_of_spaces_per_level));
+    let indent_plus_one = format!("{:n$}", "", n=(indent_level + 1) * number_of_spaces_per_level);
+    if let Some(element) = element {
+        // `element` is https://docs.rs/scraper/0.10.1/scraper/element_ref/struct.ElementRef.html
+        let top = element.value();
+
+        // Opening tag, with attributes
+        s.push_str(&format!("{}{:?}", indent, top));
+
+        for child in element.children() {
+            // Each `child` is a NodeRef<Node>:
+            // https://docs.rs/ego-tree/0.3.0/ego_tree/struct.NodeRef.html
+            // https://docs.rs/scraper/0.10.1/scraper/node/enum.Node.html
+            match child.value() {
+                Node::Comment(c) => {
+                    s.push_str(&format!("\n{}<!-- {} -->", indent_plus_one, c.comment.trim()))
+                },
+                Node::Element(_) => {
+                    s.push_str("\n");
+                    s.push_str(&print_tree(ElementRef::wrap(child), indent_level + 1));
+                },
+                Node::Text(t) => {
+                    // Ignore this text if it's just whitespace
+                    if ! t.text.trim().is_empty() {
+                        s.push_str(&format!("\n{}{}", indent_plus_one, t.text))
+                    }
+                },
+                _ => {},
+            }
+        }
+
+        // Closing tag
+        s.push_str(&format!("\n{}</{}>", indent, top.name.local));
+    }
+    s
+}
+
 impl<'a> Finder<'a> {
     fn apply(&self, element: &ElementRef) -> Option<String> {
         match self.operation {
             FinderOperation::Text => Some(element.text().collect()),
             FinderOperation::Attr(attr) => element.value().attr(attr).map(|s| s.to_string()),
-            FinderOperation::Html => Some(element.html()),
+            FinderOperation::Html => Some(print_tree(Some(*element), 0))
         }
     }
 }
@@ -238,12 +278,47 @@ mod test {
             <!DOCTYPE html>
             <meta charset="utf-8">
             <title>Hello, world!</title>
-            <h1 class="foo">Hello, <i>world!</i></h1>
+            <h1 class="foo">Hello,<i>world!<strong>and more</strong></i><!--hello    --></h1>
         "#;
         let selector = "h1 {html}";
         let result = parse(build_inputs(html, selector));
-        let expected_result = vec![r#"<h1 class="foo">Hello, <i>world!</i></h1>"#.to_string()];
-        assert_eq!(result, Ok(expected_result));
+        let expected_result = r#"
+<h1 class="foo">
+  Hello,
+  <i>
+    world!
+    <strong>
+      and more
+    </strong>
+  </i>
+  <!-- hello -->
+</h1>"#.trim_start().to_string();
+        assert_eq!(result, Ok(vec![expected_result]));
+    }
+
+    #[test]
+    fn test_html_operation_with_siblings() {
+        let html = r#"
+            <!DOCTYPE html>
+            <meta charset="utf-8">
+            <title>Hello, world!</title>
+            <body>
+                <div>foo</div>
+                <div>bar</div>
+            </body>
+        "#;
+        let selector = "body {html}";
+        let result = parse(build_inputs(html, selector));
+        let expected_result = r#"
+<body>
+  <div>
+    foo
+  </div>
+  <div>
+    bar
+  </div>
+</body>"#.trim_start().to_string();
+        assert_eq!(result, Ok(vec![expected_result]));
     }
 
     #[test]

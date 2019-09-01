@@ -23,27 +23,35 @@ The binary is called `candle`.
 
 Let's start small:
 
-    echo "<h1 class='bar'>foo <span>and foo</span></h1>" | candle 'h1 {text}'
+    echo "<h1 id='cool' class='bar'>foo <span>and foo</span></h1>" | candle 'h1 {text}'
     foo and foo
 
 The `{text}` at the end of the selector means "show me the inner text for what was selected".
 
 Let's get an attribute:
 
-    echo "<h1 class='bar'>foo <span>and foo</span></h1>" | candle 'h1 attr{class}'
+    echo "<h1 id='cool' class='bar'>foo <span>and foo</span></h1>" | candle 'h1 attr{class}'
     bar
 
 To get an attribute, use `attr{ATTRIBUTE_NAME}`.
 
 Let's print out some HTML:
 
-    echo "<h1 class='bar'>foo <span>and foo</span></h1>" | candle 'span {html}'
-    <span>and foo</span>
+    echo "<h1 id='cool' class='bar'>foo <span>and foo</span></h1>" | candle 'h1 {html}'
+    <h1 class="bar" id="cool">
+      foo
+      <span>
+        and foo
+      </span>
+    </h1>
+
+Note that the HTML is pretty-printed for you. Attributes are always shown in
+alphabetical order, regardless of their original order in the input.
 
 By printing out HTML, you can pipe `candle` output to `candle` again, and build
 up a chain of operations:
 
-    echo "<h1 class='bar'>foo <span>and foo</span></h1>" | candle 'span {html}' | candle 'span {text}'
+    echo "<h1 id='cool' class='bar'>foo <span>and foo</span></h1>" | candle 'h1 {html}' | candle 'span {text}'
     and foo
 
 In this case, `candle 'span {text}'` would get the same result without piping,
@@ -76,6 +84,23 @@ Or we can show both the text and the `href`:
     https://daringfireball.net/2019/08/siri_privacy_trust
     Superhuman and Email Privacy
     https://daringfireball.net/2019/07/superhuman_and_email_privacy
+
+To format the HTML prettily:
+
+    curl https://daringfireball.net | candle 'html {html}'
+
+    <html lang="en" class="daringfireball-net">
+      <head>
+        <meta charset="UTF-8">
+        </meta>
+        <title>
+          Daring Fireball
+        </title>
+        <meta name="viewport" content="width=500, minimum-scale=0.45">
+        </meta>
+        <link rel="apple-touch-icon-precomposed" href="/graphics/apple-touch-icon.png">
+
+    ...and so on...
 
 ## Inspiration
 
