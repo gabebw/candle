@@ -13,20 +13,22 @@ struct Inputs {
 }
 
 #[derive(Debug)]
+enum FinderOperation<'a> {
+    Attr(&'a str),
+    Text,
+}
+
+#[derive(Debug)]
 struct Finder<'a> {
     selector: Selector,
-    attr: Option<&'a str>,
-    is_text: bool,
+    operation: FinderOperation<'a>,
 }
 
 impl<'a> Finder<'a> {
-    fn apply(&self, element: &ElementRef) -> Result<Option<String>, String> {
-        if self.is_text {
-            Ok(Some(element.text().collect()))
-        } else if let Some(attr) = self.attr {
-            Ok(element.value().attr(attr).map(|s| s.to_string()))
-        } else {
-            Err("Unknown finder (not `{text}` or `attr{...}`".to_string())
+    fn apply(&self, element: &ElementRef) -> Option<String> {
+        match self.operation {
+            FinderOperation::Text => Some(element.text().collect()),
+            FinderOperation::Attr(attr) => element.value().attr(attr).map(|s| s.to_string())
         }
     }
 }
@@ -92,7 +94,7 @@ fn select_all(html: Html, finders: &[Finder]) -> Vec<String> {
 	    if element.parent().is_some() {
 	        for finder in finders {
                     if finder.selector.matches(&element) {
-                        if let Ok(Some(value)) = finder.apply(&element) {
+                        if let Some(value) = finder.apply(&element) {
                             results.push(value);
                         }
                     }
@@ -109,10 +111,19 @@ fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
     let mut finders: Vec<Finder> = Vec::new();
     for c in re.captures_iter(&inputs.selector) {
         let selector_str = c.name("selector").unwrap().as_str();
+        let operation = if c.name("text").is_some() {
+            FinderOperation::Text
+        } else if let Some(attr) = c.name("attr").map(|a| a.as_str()) {
+            FinderOperation::Attr(attr)
+        } else {
+            // This should never happen, because we're guaranteed to have found a match for either
+            // the `text` or `attr` groups
+            panic!("Something went wrong, please provide either attr{{NAME}} or {{text}}");
+        };
+
         let finder = Finder {
+            operation,
             selector: Selector::parse(selector_str).map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?,
-            is_text: c.name("text").is_some(),
-            attr: c.name("attr").map(|a| a.as_str())
         };
         finders.push(finder);
     }
