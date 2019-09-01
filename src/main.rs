@@ -16,6 +16,7 @@ struct Inputs {
 enum FinderOperation<'a> {
     Attr(&'a str),
     Text,
+    Html,
 }
 
 #[derive(Debug)]
@@ -28,7 +29,8 @@ impl<'a> Finder<'a> {
     fn apply(&self, element: &ElementRef) -> Option<String> {
         match self.operation {
             FinderOperation::Text => Some(element.text().collect()),
-            FinderOperation::Attr(attr) => element.value().attr(attr).map(|s| s.to_string())
+            FinderOperation::Attr(attr) => element.value().attr(attr).map(|s| s.to_string()),
+            FinderOperation::Html => Some(element.html()),
         }
     }
 }
@@ -107,18 +109,20 @@ fn select_all(html: Html, finders: &[Finder]) -> Vec<String> {
 
 fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
     let document = Html::parse_document(&inputs.html);
-    let re = Regex::new(r"(?P<selector>[^{}]+) (?:(?P<text>\{text\})|(attr\{(?P<attr>[^}]+)\}))[,]?\s*").unwrap();
+    let re = Regex::new(r"(?P<selector>[^{}]+) (?:(?P<text>\{text\})|(?P<html>\{html\})|(attr\{(?P<attr>[^}]+)\}))[,]?\s*").unwrap();
     let mut finders: Vec<Finder> = Vec::new();
     for c in re.captures_iter(&inputs.selector) {
         let selector_str = c.name("selector").unwrap().as_str();
         let operation = if c.name("text").is_some() {
             FinderOperation::Text
+        } else if c.name("html").is_some() {
+            FinderOperation::Html
         } else if let Some(attr) = c.name("attr").map(|a| a.as_str()) {
             FinderOperation::Attr(attr)
         } else {
-            // This should never happen, because we're guaranteed to have found a match for either
-            // the `text` or `attr` groups
-            panic!("Something went wrong, please provide either attr{{NAME}} or {{text}}");
+            // This should never happen, because we're guaranteed to have found a match for at
+            // least one of the groups.
+            panic!("Something went wrong, please provide {{text}}, {{html}}, or attr{{NAME}}");
         };
 
         let finder = Finder {
@@ -129,7 +133,7 @@ fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
     }
 
     if finders.is_empty() {
-        Err("Please specify {text} or attr{ATTRIBUTE}".to_string())
+        Err("Please specify {text}, {html}, or attr{ATTRIBUTE}".to_string())
     } else {
         Ok(select_all(document, &finders))
     }
@@ -215,7 +219,21 @@ mod test {
     }
 
     #[test]
-    fn test_no_text_or_attr_specification(){
+    fn test_html_operation(){
+        let html = r#"
+            <!DOCTYPE html>
+            <meta charset="utf-8">
+            <title>Hello, world!</title>
+            <h1 class="foo">Hello, <i>world!</i></h1>
+        "#;
+        let selector = "h1 {html}";
+        let result = parse(build_inputs(html, selector));
+        let expected_result = vec!(r#"<h1 class="foo">Hello, <i>world!</i></h1>"#.to_string());
+        assert_eq!(result, Ok(expected_result));
+    }
+
+    #[test]
+    fn test_bad_operation(){
         let html = r#"
             <!DOCTYPE html>
             <meta charset="utf-8">
@@ -224,7 +242,7 @@ mod test {
         "#;
         let selector = "h1";
         let result = parse(build_inputs(html, selector));
-        assert_eq!(result, Err("Please specify {text} or attr{ATTRIBUTE}".to_string()));
+        assert_eq!(result, Err("Please specify {text}, {html}, or attr{ATTRIBUTE}".to_string()));
     }
 
     #[test]

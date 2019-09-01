@@ -35,6 +35,21 @@ Let's get an attribute:
 
 To get an attribute, use `attr{ATTRIBUTE_NAME}`.
 
+Let's print out some HTML:
+
+    echo "<h1 class='bar'>foo <span>and foo</span></h1>" | candle 'span {html}'
+    <span>and foo</span>
+
+By printing out HTML, you can pipe `candle` output to `candle` again, and build
+up a chain of operations:
+
+    echo "<h1 class='bar'>foo <span>and foo</span></h1>" | candle 'span {html}' | candle 'span {text}'
+    and foo
+
+In this case, `candle 'span {text}'` would get the same result without piping,
+but the `{html}` filter can be helpful when you're not sure what the HTML looks
+like and want to poke at it.
+
 Now let's parse a real webpage:
 
     curl https://daringfireball.net | candle 'dl a:not([title]) {text}'
