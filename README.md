@@ -1,9 +1,9 @@
-# Candle
+# Candle :candle:
 
 Candle lets you use CSS selectors to slice and dice any HTML on the command
 line. Just pipe in any HTML and tell Candle what to do with it.
 
-Because candle uses Firefox's real-world CSS parsing engine, you can pass it
+Because Candle uses Firefox's real-world CSS parsing engine, you can pass it
 arbitrarily-complex CSS selectors, just like you'd write in real CSS.
 
 ## Installation
