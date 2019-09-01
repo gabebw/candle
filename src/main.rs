@@ -2,6 +2,7 @@ use encoding_rs::Encoding;
 use isatty::stdin_isatty;
 use regex::Regex;
 use scraper::{ElementRef, Html, Selector};
+use std::cmp;
 use std::env;
 use std::io::{self, Read};
 use std::process;
@@ -30,13 +31,14 @@ impl<'a> Finder<'a> {
     }
 }
 
-fn read_from_stdin() -> Option<String> {
+fn read_from<R: Read>(mut reader: R) -> Option<String> {
     // It might not be valid UTF-8, so read to a vector of bytes and convert it to UTF-8, lossily
     let mut buffer: Vec<u8> = Vec::new();
-    io::stdin().read_to_end(&mut buffer).ok()?;
+    reader.read_to_end(&mut buffer).ok()?;
     let re_meta_charset = Regex::new(r#"<meta\s+charset=["']([^'"]+)["']"#).unwrap();
     let string = String::from_utf8_lossy(&buffer).to_string();
-    if let Some(captures) = re_meta_charset.captures(&string[..1024]) {
+    let len = cmp::min(string.len(), 1024);
+    if let Some(captures) = re_meta_charset.captures(&string[..len]) {
         let charset = captures.get(1).unwrap().as_str();
         match Encoding::for_label(charset.as_bytes()) {
             Some(encoding) => {
@@ -52,7 +54,7 @@ fn read_from_stdin() -> Option<String> {
 
 fn read_inputs() -> Result<Inputs, String> {
     let selector = env::args().nth(1).ok_or("Usage: candle SELECTOR")?;
-    let html = read_from_stdin().ok_or("Error: couldn't read from STDIN")?;
+    let html = read_from(io::stdin()).ok_or("Error: couldn't read from STDIN")?;
     Ok(Inputs { selector, html })
 }
 
@@ -124,6 +126,7 @@ fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
 
 #[cfg(test)]
 mod test {
+    use std::io::Cursor;
     use super::*;
 
     #[test]
@@ -211,6 +214,18 @@ mod test {
         let selector = "h1";
         let result = parse(build_inputs(html, selector));
         assert_eq!(result, Err("Please specify {text} or attr{ATTRIBUTE}".to_string()));
+    }
+
+    #[test]
+    fn test_less_than_1024_bytes_of_html(){
+        let html = r#"
+            <!DOCTYPE html>
+            <meta charset="utf-8">
+            <title>Hello, world!</title>
+            <h1 class="foo">Hello, <i>world!</i></h1>
+        "#;
+        let result = read_from(Cursor::new(html));
+        assert_eq!(result, Some(html.to_string()));
     }
 
     fn build_inputs(html: &str, selector: &str) -> Inputs {
