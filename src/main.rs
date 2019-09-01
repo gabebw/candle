@@ -49,7 +49,7 @@ fn read_from<R: Read>(mut reader: R) -> Option<String> {
                 let string_with_new_encoding = encoding.decode(&buffer).0;
                 Some((*string_with_new_encoding).to_string())
             }
-            None => Some(string)
+            None => Some(string),
         }
     } else {
         Some(string)
@@ -69,17 +69,15 @@ fn main() {
     }
 
     match read_inputs() {
-        Ok(inputs) => {
-            match parse(inputs) {
-                Ok(result) => {
-                    for r in result {
-                        println!("{}", &r.trim());
-                    }
-                },
-                Err(e) => {
-                    eprintln!("{}", e);
-                    process::exit(1);
+        Ok(inputs) => match parse(inputs) {
+            Ok(result) => {
+                for r in result {
+                    println!("{}", &r.trim());
                 }
+            },
+            Err(e) => {
+                eprintln!("{}", e);
+                process::exit(1);
             }
         },
         Err(e) => {
@@ -92,17 +90,17 @@ fn main() {
 fn select_all(html: Html, finders: &[Finder]) -> Vec<String> {
     let mut results: Vec<String> = Vec::new();
     for node in html.tree.nodes().by_ref() {
-	if let Some(element) = ElementRef::wrap(node) {
-	    if element.parent().is_some() {
-	        for finder in finders {
+        if let Some(element) = ElementRef::wrap(node) {
+            if element.parent().is_some() {
+                for finder in finders {
                     if finder.selector.matches(&element) {
                         if let Some(value) = finder.apply(&element) {
                             results.push(value);
                         }
                     }
                 }
-	    }
-	}
+            }
+        }
     }
     results
 }
@@ -139,7 +137,8 @@ fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
 
         let finder = Finder {
             operation,
-            selector: Selector::parse(selector_str).map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?,
+            selector: Selector::parse(selector_str)
+                .map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?,
         };
         finders.push(finder);
     }
@@ -157,7 +156,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_showing_inner_text(){
+    fn test_showing_inner_text() {
         let html = r#"
             <!DOCTYPE html>
             <meta charset="utf-8">
@@ -166,11 +165,11 @@ mod test {
         "#;
         let selector = "h1 i {text}";
         let result = parse(build_inputs(html, selector));
-        assert_eq!(result, Ok(vec!("world!".to_string())));
+        assert_eq!(result, Ok(vec!["world!".to_string()]));
     }
 
     #[test]
-    fn test_bad_selector(){
+    fn test_bad_selector() {
         let html = r#"
             <!DOCTYPE html>
             <meta charset="utf-8">
@@ -183,7 +182,7 @@ mod test {
     }
 
     #[test]
-    fn test_showing_specific_attr(){
+    fn test_showing_specific_attr() {
         let html = r#"
             <!DOCTYPE html>
             <meta charset="utf-8">
@@ -192,11 +191,11 @@ mod test {
         "#;
         let selector = "h1 attr{class}";
         let result = parse(build_inputs(html, selector));
-        assert_eq!(result, Ok(vec!("foo".to_string())));
+        assert_eq!(result, Ok(vec!["foo".to_string()]));
     }
 
     #[test]
-    fn test_multiple_selectors(){
+    fn test_multiple_selectors() {
         let html = r#"
             <!DOCTYPE html>
             <meta charset="utf-8">
@@ -205,11 +204,14 @@ mod test {
         "#;
         let selector = "h1 attr{class}, h1 {text}";
         let result = parse(build_inputs(html, selector));
-        assert_eq!(result, Ok(vec!("foo".to_string(), "Hello, world!".to_string())));
+        assert_eq!(
+            result,
+            Ok(vec!["foo".to_string(), "Hello, world!".to_string()])
+        );
     }
 
     #[test]
-    fn test_multiple_finders_on_same_node_shown_together(){
+    fn test_multiple_finders_on_same_node_shown_together() {
         let html = r#"
             <!DOCTYPE html>
             <meta charset="utf-8">
@@ -221,17 +223,17 @@ mod test {
         let result = parse(build_inputs(html, selector));
         // the class and text for a given node are shown together
         // i.e. it's class-text-class-text, rather than class-class-text-text
-        let expected_result = vec!(
+        let expected_result = vec![
             "foo".to_string(),
             "Hello".to_string(),
             "bar".to_string(),
             "Hi".to_string(),
-        );
+        ];
         assert_eq!(result, Ok(expected_result));
     }
 
     #[test]
-    fn test_html_operation(){
+    fn test_html_operation() {
         let html = r#"
             <!DOCTYPE html>
             <meta charset="utf-8">
@@ -240,12 +242,12 @@ mod test {
         "#;
         let selector = "h1 {html}";
         let result = parse(build_inputs(html, selector));
-        let expected_result = vec!(r#"<h1 class="foo">Hello, <i>world!</i></h1>"#.to_string());
+        let expected_result = vec![r#"<h1 class="foo">Hello, <i>world!</i></h1>"#.to_string()];
         assert_eq!(result, Ok(expected_result));
     }
 
     #[test]
-    fn test_bad_operation(){
+    fn test_bad_operation() {
         let html = r#"
             <!DOCTYPE html>
             <meta charset="utf-8">
@@ -254,11 +256,14 @@ mod test {
         "#;
         let selector = "h1";
         let result = parse(build_inputs(html, selector));
-        assert_eq!(result, Err("Please specify {text}, {html}, or attr{ATTRIBUTE}".to_string()));
+        assert_eq!(
+            result,
+            Err("Please specify {text}, {html}, or attr{ATTRIBUTE}".to_string())
+        );
     }
 
     #[test]
-    fn test_less_than_1024_bytes_of_html(){
+    fn test_less_than_1024_bytes_of_html() {
         let html = r#"
             <!DOCTYPE html>
             <meta charset="utf-8">
