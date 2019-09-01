@@ -10,7 +10,7 @@ arbitrarily-complex CSS selectors, just like you'd write in real CSS.
 
 On a Mac using Homebrew (Rust not required):
 
-    brew install https://raw.githubusercontent.com/gabebw/candle/master/homebrew/candle.rb
+    brew install gabebw/formulae/candle
 
 Or to build from source (requires the Rust package manager,
 [Cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)):
