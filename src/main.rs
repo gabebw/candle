@@ -11,6 +11,12 @@ struct Inputs {
     html: String,
 }
 
+struct Finder<'a> {
+    selector: &'a str,
+    attr: Option<&'a str>,
+    is_text: bool,
+}
+
 fn read_from_stdin() -> Option<String> {
     // It might not be valid UTF-8, so read to a vector of bytes and convert it to UTF-8, lossily
     let mut buffer: Vec<u8> = Vec::new();
@@ -64,30 +70,40 @@ fn main() {
     }
 }
 
-fn select(document: scraper::Html, captures: regex::Captures) -> Result<Vec<String>, String> {
-    let selector = Selector::parse(captures.name("selector").unwrap().as_str())
+fn select_all(document: scraper::Html, finders: Vec<Finder>) -> Result<Vec<String>, String> {
+    let mut results: Vec<String> = Vec::new();
+    for finder in finders {
+        results.extend(select(&document, &finder)?);
+    }
+    Ok(results)
+}
+
+fn select(document: &scraper::Html, finder: &Finder) -> Result<Vec<String>, String> {
+    let selector = Selector::parse(finder.selector)
         .map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?;
     let selected = document.select(&selector);
 
-    if captures.name("text").is_some() {
+    if finder.is_text {
         Ok(selected.map(|element| element.text().collect()).collect())
-    } else if let Some(attr) = captures.name("attr") {
+    } else if let Some(attr) = finder.attr {
         Ok(selected
-            .filter_map(|element| element.value().attr(attr.as_str()).map(|s| s.to_string()))
+            .filter_map(|element| element.value().attr(attr).map(|s| s.to_string()))
             .collect())
     } else {
-        Err("Unknown request".to_string())
+        Err("Unknown finder (not `{text}` or `attr{...}`".to_string())
     }
 }
 
 fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
     let document = Html::parse_document(&inputs.html);
-    let re = Regex::new(r"(?P<selector>.+) (?:(?P<text>\{text\})|(attr\{(?P<attr>[^}]+)\}))$").unwrap();
-    match re.captures(&inputs.selector) {
-        Some(captures) => select(document, captures),
-        None => {
-            Err("Please specify {text} or attr{ATTRIBUTE}".to_string())
-        }
+    let re = Regex::new(r"(?P<selector>[^{}]+) (?:(?P<text>\{text\})|(attr\{(?P<attr>[^}]+)\}))[,]?\s*").unwrap();
+    let finders: Vec<Finder> = re.captures_iter(&inputs.selector)
+        .map(|c| Finder { selector: c.name("selector").unwrap().as_str(), is_text: c.name("text").is_some(), attr: c.name("attr").map(|a| a.as_str()) }).collect();
+
+    if finders.len() == 0 {
+        Err("Please specify {text} or attr{ATTRIBUTE}".to_string())
+    } else {
+        select_all(document, finders)
     }
 }
 
@@ -132,6 +148,19 @@ mod test {
         let selector = "h1 attr{class}";
         let result = parse(build_inputs(html, selector));
         assert_eq!(result, Ok(vec!("foo".to_string())));
+    }
+
+    #[test]
+    fn test_multiple_selectors(){
+        let html = r#"
+            <!DOCTYPE html>
+            <meta charset="utf-8">
+            <title>Hello, world!</title>
+            <h1 class="foo">Hello, <i>world!</i></h1>
+        "#;
+        let selector = "h1 attr{class}, h1 {text}";
+        let result = parse(build_inputs(html, selector));
+        assert_eq!(result, Ok(vec!("foo".to_string(), "Hello, world!".to_string())));
     }
 
     #[test]

@@ -37,23 +37,26 @@ To get an attribute, use `attr{ATTRIBUTE_NAME}`.
 
 Now let's parse a real webpage:
 
-    curl https://daringfireball.net | candle 'dl.linkedlist dt a:not([title]) {text}'
+    curl https://daringfireball.net | candle 'dl a:not([title]) {text}'
 
     Jack Dorsey’s Twitter Account Was Compromised
     NetNewsWire 5.0
-    Filmmaker Mode (a.k.a. Death to Motion Smoothing)
-    Apple Expands Third-Party Repair Program
-    Apple Sends Invitations for September 10 Event
 
 We can show the `href` attribute instead:
 
-    curl https://daringfireball.net | candle 'dl.linkedlist dt a:not([title]) attr{href}'
+    curl https://daringfireball.net | candle 'dl a:not([title]) attr{href}'
 
     https://techcrunch.com/2019/08/30/someone-hacked-jack-dorseys-own-twitter-account/
     https://inessential.com/2019/08/26/netnewswire_5_0_now_available
-    https://www.experienceuhd.com/filmmakermode
-    https://www.apple.com/newsroom/2019/08/apple-offers-customers-even-more-options-for-safe-reliable-repairs/
-    https://www.loopinsight.com/2019/08/29/apple-sends-invite-for-september-10-event/
+
+Or we can show both the text and the `href`:
+
+    curl https://daringfireball.net | candle 'dl a:not([title]) attr{href}, dl a:not([title]) {text}'
+
+    https://techcrunch.com/2019/08/30/someone-hacked-jack-dorseys-own-twitter-account/
+    https://inessential.com/2019/08/26/netnewswire_5_0_now_available
+    Jack Dorsey’s Twitter Account Was Compromised
+    NetNewsWire 5.0
 
 ## Inspiration
 
