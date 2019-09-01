@@ -1,7 +1,7 @@
 use encoding_rs::Encoding;
 use isatty::stdin_isatty;
 use regex::Regex;
-use scraper::{Html, Selector};
+use scraper::{ElementRef, Html, Selector};
 use std::env;
 use std::io::{self, Read};
 use std::process;
@@ -11,10 +11,23 @@ struct Inputs {
     html: String,
 }
 
+#[derive(Debug)]
 struct Finder<'a> {
-    selector: &'a str,
+    selector: Selector,
     attr: Option<&'a str>,
     is_text: bool,
+}
+
+impl<'a> Finder<'a> {
+    fn apply(&self, element: &ElementRef) -> Result<Option<String>, String> {
+        if self.is_text {
+            Ok(Some(element.text().collect()))
+        } else if let Some(attr) = self.attr {
+            Ok(element.value().attr(attr).map(|s| s.to_string()))
+        } else {
+            Err("Unknown finder (not `{text}` or `attr{...}`".to_string())
+        }
+    }
 }
 
 fn read_from_stdin() -> Option<String> {
@@ -70,40 +83,42 @@ fn main() {
     }
 }
 
-fn select_all(document: scraper::Html, finders: Vec<Finder>) -> Result<Vec<String>, String> {
+fn select_all<'a>(html: Html, finders: &[Finder]) -> Vec<String> {
     let mut results: Vec<String> = Vec::new();
-    for finder in finders {
-        results.extend(select(&document, &finder)?);
+    for node in html.tree.nodes().by_ref() {
+	if let Some(element) = ElementRef::wrap(node) {
+	    if element.parent().is_some() {
+	        for finder in finders {
+                    if finder.selector.matches(&element) {
+                        if let Ok(Some(value)) = finder.apply(&element) {
+                            results.push(value);
+                        }
+                    }
+                }
+	    }
+	}
     }
-    Ok(results)
-}
-
-fn select(document: &scraper::Html, finder: &Finder) -> Result<Vec<String>, String> {
-    let selector = Selector::parse(finder.selector)
-        .map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?;
-    let selected = document.select(&selector);
-
-    if finder.is_text {
-        Ok(selected.map(|element| element.text().collect()).collect())
-    } else if let Some(attr) = finder.attr {
-        Ok(selected
-            .filter_map(|element| element.value().attr(attr).map(|s| s.to_string()))
-            .collect())
-    } else {
-        Err("Unknown finder (not `{text}` or `attr{...}`".to_string())
-    }
+    results
 }
 
 fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
     let document = Html::parse_document(&inputs.html);
     let re = Regex::new(r"(?P<selector>[^{}]+) (?:(?P<text>\{text\})|(attr\{(?P<attr>[^}]+)\}))[,]?\s*").unwrap();
-    let finders: Vec<Finder> = re.captures_iter(&inputs.selector)
-        .map(|c| Finder { selector: c.name("selector").unwrap().as_str(), is_text: c.name("text").is_some(), attr: c.name("attr").map(|a| a.as_str()) }).collect();
+    let mut finders: Vec<Finder> = Vec::new();
+    for c in re.captures_iter(&inputs.selector) {
+        let selector_str = c.name("selector").unwrap().as_str();
+        let finder = Finder {
+            selector: Selector::parse(selector_str).map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?,
+            is_text: c.name("text").is_some(),
+            attr: c.name("attr").map(|a| a.as_str())
+        };
+        finders.push(finder);
+    }
 
-    if finders.len() == 0 {
+    if finders.is_empty() {
         Err("Please specify {text} or attr{ATTRIBUTE}".to_string())
     } else {
-        select_all(document, finders)
+        Ok(select_all(document, &finders))
     }
 }
 
@@ -161,6 +176,28 @@ mod test {
         let selector = "h1 attr{class}, h1 {text}";
         let result = parse(build_inputs(html, selector));
         assert_eq!(result, Ok(vec!("foo".to_string(), "Hello, world!".to_string())));
+    }
+
+    #[test]
+    fn test_multiple_finders_on_same_node_shown_together(){
+        let html = r#"
+            <!DOCTYPE html>
+            <meta charset="utf-8">
+            <title>Hello, world!</title>
+            <h2 class="foo">Hello</h2>
+            <h2 class="bar">Hi</h2>
+        "#;
+        let selector = "h2 attr{class}, h2 {text}";
+        let result = parse(build_inputs(html, selector));
+        // the class and text for a given node are shown together
+        // i.e. it's class-text-class-text, rather than class-class-text-text
+        let expected_result = vec!(
+            "foo".to_string(),
+            "Hello".to_string(),
+            "bar".to_string(),
+            "Hi".to_string(),
+        );
+        assert_eq!(result, Ok(expected_result));
     }
 
     #[test]

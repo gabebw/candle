@@ -51,12 +51,12 @@ We can show the `href` attribute instead:
 
 Or we can show both the text and the `href`:
 
-    curl https://daringfireball.net | candle 'dl a:not([title]) attr{href}, dl a:not([title]) {text}'
+    curl https://daringfireball.net | candle 'dl a:not([title]) attr{text}, dl a:not([title]) {href}'
 
-    https://techcrunch.com/2019/08/30/someone-hacked-jack-dorseys-own-twitter-account/
-    https://inessential.com/2019/08/26/netnewswire_5_0_now_available
     Jack Dorsey’s Twitter Account Was Compromised
+    https://techcrunch.com/2019/08/30/someone-hacked-jack-dorseys-own-twitter-account/
     NetNewsWire 5.0
+    https://inessential.com/2019/08/26/netnewswire_5_0_now_available
 
 ## Inspiration
 
