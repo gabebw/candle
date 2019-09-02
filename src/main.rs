@@ -4,7 +4,7 @@ use regex::Regex;
 use scraper::{ElementRef, Html, Node, Selector};
 use std::cmp;
 use std::env;
-use std::io::{self, Read};
+use std::io::{self, Read, Write};
 use std::process;
 
 struct Inputs {
@@ -136,8 +136,16 @@ fn main() {
     match read_inputs() {
         Ok(inputs) => match parse(inputs) {
             Ok(result) => {
+                let mut stdout = io::stdout();
+
                 for r in result {
-                    println!("{}", &r.trim());
+                    // Ignore the Err (just for this line), because the most common Err is exactly
+                    // the one to suppress: panicking when piping to something that truncates the
+                    // output, like `head`.
+                    #[allow(unused_must_use)]
+                    {
+                        writeln!(stdout, "{}", &r.trim());
+                    }
                 }
             },
             Err(e) => {
