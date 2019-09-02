@@ -2,7 +2,7 @@
 
 set -eo pipefail
 
-candle_version=$(grep 'version =' Cargo.toml | sed -e 's/version = //' -e 's/"//g')
+candle_version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
 name="candle-${candle_version}"
 
 export MACOSX_DEPLOYMENT_TARGET=10.7
