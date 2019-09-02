@@ -83,8 +83,8 @@ fn print_tree(element: Option<ElementRef>, indent_level: usize) -> String {
                 }
             }
 
-        // Closing tag
-        s.push_str(&format!("\n{}</{}>", indent, tag_name));
+            // Closing tag
+            s.push_str(&format!("\n{}</{}>", indent, tag_name));
         }
     }
     s
