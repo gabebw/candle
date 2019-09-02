@@ -140,12 +140,10 @@ fn main() {
                 let mut stdout = io::stdout();
 
                 for r in result {
-                    // Ignore the Err (just for this line), because the most common Err is exactly
-                    // the one to suppress: panicking when piping to something that truncates the
-                    // output, like `head`.
-                    #[allow(unused_must_use)]
-                    {
-                        writeln!(stdout, "{}", &r.trim());
+                    // Ignore the Err because the most common Err is exactly the one to suppress:
+                    // panicking when piping to something that truncates the output, like `head`.
+                    if writeln!(stdout, "{}", &r.trim()).is_err() {
+                        break;
                     }
                 }
             },
