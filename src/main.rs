@@ -4,7 +4,7 @@ use regex::Regex;
 use scraper::{ElementRef, Html, Node, Selector};
 use std::cmp;
 use std::env;
-use std::io::{self, Read, Write};
+use std::io::{self, ErrorKind, Read, Write};
 use std::process;
 
 struct Inputs {
@@ -140,10 +140,13 @@ fn main() {
                 let mut stdout = io::stdout();
 
                 for r in result {
-                    // Ignore the Err because the most common Err is exactly the one to suppress:
-                    // panicking when piping to something that truncates the output, like `head`.
-                    if writeln!(stdout, "{}", &r.trim()).is_err() {
-                        break;
+                    if let Err(e) = writeln!(stdout, "{}", &r.trim()) {
+                        // Ignore broken pipes, they most likely come from piping to something
+                        // that truncates the output, like `head`.
+                        if e.kind() != ErrorKind::BrokenPipe {
+                            eprintln!("{}", e);
+                            process::exit(1);
+                        }
                     }
                 }
             },
