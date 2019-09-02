@@ -223,7 +223,7 @@ fn finders<'a>(inputs: &'a Inputs) -> Result<Vec<Finder<'a>>, String> {
             let finder = Finder {
                 operation,
                 selector: Selector::parse(selector_str)
-                    .map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?,
+                    .map_err(|e| format!("'{}' is a bad CSS selector: {:?}", selector_str.trim(), e.kind))?,
             };
             finders.push(finder);
         }
@@ -269,7 +269,7 @@ mod test {
         "#;
         let selector = "h1^3 {text}";
         let err = parse(build_inputs(html, selector)).expect_err("not an Err");
-        assert_eq!(true, err.starts_with("Bad CSS selector"));
+        assert!(err.starts_with("'h1^3' is a bad CSS selector:"));
     }
 
     #[test]
