@@ -128,6 +128,19 @@ fn read_inputs() -> Result<Inputs, String> {
     Ok(Inputs { selector, html })
 }
 
+fn cleanly_write(content: &str) {
+    let mut stdout = io::stdout();
+
+    if let Err(e) = writeln!(stdout, "{}", content) {
+        // Ignore broken pipes, they most likely come from piping to something
+        // that truncates the output, like `head`.
+        if e.kind() != ErrorKind::BrokenPipe {
+            eprintln!("{}", e);
+            process::exit(1);
+        }
+    }
+}
+
 fn main() {
     if stdin_isatty() {
         eprintln!("You must pipe in input to candle");
@@ -137,17 +150,8 @@ fn main() {
     match read_inputs() {
         Ok(inputs) => match parse(inputs) {
             Ok(result) => {
-                let mut stdout = io::stdout();
-
                 for r in result {
-                    if let Err(e) = writeln!(stdout, "{}", &r.trim()) {
-                        // Ignore broken pipes, they most likely come from piping to something
-                        // that truncates the output, like `head`.
-                        if e.kind() != ErrorKind::BrokenPipe {
-                            eprintln!("{}", e);
-                            process::exit(1);
-                        }
-                    }
+                    cleanly_write(&r.trim());
                 }
             },
             Err(e) => {
