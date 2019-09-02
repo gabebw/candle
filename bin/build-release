@@ -9,6 +9,7 @@ export MACOSX_DEPLOYMENT_TARGET=10.7
 export TARGET=x86_64-apple-darwin
 
 cargo build --release --target "$TARGET" --locked
+cargo test
 
 mkdir -p releases
 rm -rf releases/"$name"
