@@ -87,14 +87,14 @@ To format the HTML prettily:
     $ curl https://daringfireball.net | candle 'html {html}'
     <html lang="en" class="daringfireball-net">
       <head>
-        <meta charset="UTF-8">
-        </meta>
+        <meta charset="UTF-8"></meta>
         <title>
           Daring Fireball
         </title>
-        <meta name="viewport" content="width=500, minimum-scale=0.45">
-        </meta>
-        <link rel="apple-touch-icon-precomposed" href="/graphics/apple-touch-icon.png">
+        <meta name="viewport" content="width=500, minimum-scale=0.45"></meta>
+        <link rel="apple-touch-icon-precomposed" href="/graphics/apple-touch-icon.png"></link>
+        <link rel="shortcut icon" href="/graphics/favicon.ico?v=005"></link>
+        <link rel="mask-icon" color="#4a525a" href="/graphics/dfstar.svg"></link>
 
     ...and so on...
 
