@@ -26,6 +26,24 @@ struct Finder<'a> {
 }
 
 const NUMBER_OF_SPACES_PER_LEVEL: usize = 2;
+const SELF_CLOSING_ELEMENTS: &[&str; 16] = &[
+    "area",
+    "base",
+    "br",
+    "col",
+    "command",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "keygen",
+    "link",
+    "meta",
+    "param",
+    "source",
+    "track",
+    "wbr"
+];
 
 fn print_tree(element: Option<ElementRef>, indent_level: usize) -> String {
     let mut s = String::new();
@@ -34,34 +52,40 @@ fn print_tree(element: Option<ElementRef>, indent_level: usize) -> String {
     if let Some(element) = element {
         // `element` is https://docs.rs/scraper/0.10.1/scraper/element_ref/struct.ElementRef.html
         let top = element.value();
+        let tag_name: &str = &format!("{}", top.name.local);
 
-        // Opening tag, with attributes
-        s.push_str(&format!("{}{:?}", indent, top));
+        if element.children().peekable().peek().is_none() && SELF_CLOSING_ELEMENTS.contains(&tag_name) {
+            // The tag has no children and is self-closing
+            s.push_str(&format!("{}{:?}</{}>", indent, top, tag_name));
+        } else {
+            // Opening tag, with attributes
+            s.push_str(&format!("{}{:?}", indent, top));
 
-        for child in element.children() {
-            // Each `child` is a NodeRef<Node>:
-            // https://docs.rs/ego-tree/0.3.0/ego_tree/struct.NodeRef.html
-            // https://docs.rs/scraper/0.10.1/scraper/node/enum.Node.html
-            match child.value() {
-                Node::Comment(c) => {
-                    s.push_str(&format!("\n{}<!-- {} -->", indent_plus_one, c.comment.trim()))
-                },
-                Node::Element(_) => {
-                    s.push_str("\n");
-                    s.push_str(&print_tree(ElementRef::wrap(child), indent_level + 1));
-                },
-                Node::Text(t) => {
-                    // Ignore this text if it's just whitespace
-                    if ! t.text.trim().is_empty() {
-                        s.push_str(&format!("\n{}{}", indent_plus_one, t.text))
-                    }
-                },
-                _ => {},
+            for child in element.children() {
+                // Each `child` is a NodeRef<Node>:
+                // https://docs.rs/ego-tree/0.3.0/ego_tree/struct.NodeRef.html
+                // https://docs.rs/scraper/0.10.1/scraper/node/enum.Node.html
+                match child.value() {
+                    Node::Comment(c) => {
+                        s.push_str(&format!("\n{}<!-- {} -->", indent_plus_one, c.comment.trim()))
+                    },
+                    Node::Element(_) => {
+                        s.push_str("\n");
+                        s.push_str(&print_tree(ElementRef::wrap(child), indent_level + 1));
+                    },
+                    Node::Text(t) => {
+                        // Ignore this text if it's just whitespace
+                        if ! t.text.trim().is_empty() {
+                            s.push_str(&format!("\n{}{}", indent_plus_one, t.text))
+                        }
+                    },
+                    _ => {},
+                }
             }
-        }
 
         // Closing tag
-        s.push_str(&format!("\n{}</{}>", indent, top.name.local));
+        s.push_str(&format!("\n{}</{}>", indent, tag_name));
+        }
     }
     s
 }
@@ -294,6 +318,20 @@ mod test {
   </i>
   <!-- hello -->
 </h1>"#.trim_start().to_string();
+        assert_eq!(result, Ok(vec![expected_result]));
+    }
+
+    #[test]
+    fn test_html_operation_with_self_closing_tags() {
+        let html = r#"
+            <!DOCTYPE html>
+            <meta charset="utf-8">
+            <title>Hello, world!</title>
+            <h1 class="foo">Hello,<i>world!<strong>and more</strong></i><!--hello    --></h1>
+        "#;
+        let selector = "meta {html}";
+        let result = parse(build_inputs(html, selector));
+        let expected_result = r#"<meta charset="utf-8"></meta>"#.to_string();
         assert_eq!(result, Ok(vec![expected_result]));
     }
 
