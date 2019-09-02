@@ -1,10 +1,13 @@
 # Candle :candle:
 
 Candle lets you use CSS selectors to slice and dice any HTML on the command
-line. [See below](#usage) for examples.
+line. It can also pretty-print any HTML. [See below](#usage) for examples.
 
 Since Candle uses Firefox's real-world browser engine, you can pass it any HTML
 or CSS you can think of.
+
+Candle is written in Rust, and is very fast: almost any combination of HTML and
+CSS you can throw at it will complete in <50ms.
 
 ## Installation
 
