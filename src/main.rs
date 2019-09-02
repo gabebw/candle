@@ -146,7 +146,6 @@ fn select_all(html: Html, finders: &[Finder]) -> Vec<String> {
 }
 
 fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
-    let document = Html::parse_document(&inputs.html);
     let re = Regex::new(r"(?x)
         (?P<selector>[^{}]+)
         (?:
@@ -186,6 +185,7 @@ fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
     if finders.is_empty() {
         Err("Please specify {text}, {html}, or attr{ATTRIBUTE}".to_string())
     } else {
+        let document = Html::parse_document(&inputs.html);
         Ok(select_all(document, &finders))
     }
 }
