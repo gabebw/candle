@@ -52,26 +52,30 @@ like and want to poke at it.
 
 Now let's parse a real webpage:
 
-    curl https://daringfireball.net | candle 'dl a:not([title]) {text}'
+    curl https://daringfireball.net | candle '.article h1 a {text}'
 
-    Jack Dorsey’s Twitter Account Was Compromised
-    NetNewsWire 5.0
+    Apple Addresses Siri Privacy Protections
+    Siri, Privacy, and Trust
+    Superhuman and Email Privacy
 
 We can show the `href` attribute instead:
 
-    curl https://daringfireball.net | candle 'dl a:not([title]) attr{href}'
+    curl https://daringfireball.net | candle '.article h1 a attr{href}'
 
-    https://techcrunch.com/2019/08/30/someone-hacked-jack-dorseys-own-twitter-account/
-    https://inessential.com/2019/08/26/netnewswire_5_0_now_available
+    https://daringfireball.net/2019/08/apple_siri_privacy
+    https://daringfireball.net/2019/08/siri_privacy_trust
+    https://daringfireball.net/2019/07/superhuman_and_email_privacy
 
 Or we can show both the text and the `href`:
 
-    curl https://daringfireball.net | candle 'dl a:not([title]) attr{text}, dl a:not([title]) {href}'
+    curl https://daringfireball.net | candle '.article h1 a {text}, .article h1 a attr{href}'
 
-    Jack Dorsey’s Twitter Account Was Compromised
-    https://techcrunch.com/2019/08/30/someone-hacked-jack-dorseys-own-twitter-account/
-    NetNewsWire 5.0
-    https://inessential.com/2019/08/26/netnewswire_5_0_now_available
+    Apple Addresses Siri Privacy Protections
+    https://daringfireball.net/2019/08/apple_siri_privacy
+    Siri, Privacy, and Trust
+    https://daringfireball.net/2019/08/siri_privacy_trust
+    Superhuman and Email Privacy
+    https://daringfireball.net/2019/07/superhuman_and_email_privacy
 
 ## Inspiration
 
