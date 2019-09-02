@@ -23,21 +23,21 @@ The binary is called `candle`.
 
 Let's start small:
 
-    echo "<h1 id='cool' class='bar'>foo <span>and foo</span></h1>" | candle 'h1 {text}'
+    $ echo "<h1 id='cool' class='bar'>foo <span>and foo</span></h1>" | candle 'h1 {text}'
     foo and foo
 
 The `{text}` at the end of the selector means "show me the inner text for what was selected".
 
 Let's get an attribute:
 
-    echo "<h1 id='cool' class='bar'>foo <span>and foo</span></h1>" | candle 'h1 attr{class}'
+    $ echo "<h1 id='cool' class='bar'>foo <span>and foo</span></h1>" | candle 'h1 attr{class}'
     bar
 
 To get an attribute, use `attr{ATTRIBUTE_NAME}`.
 
 Let's print out some HTML:
 
-    echo "<h1 id='cool' class='bar'>foo <span>and foo</span></h1>" | candle 'h1 {html}'
+    $ echo "<h1 id='cool' class='bar'>foo <span>and foo</span></h1>" | candle 'h1 {html}'
     <h1 class="bar" id="cool">
       foo
       <span>
@@ -51,7 +51,7 @@ alphabetical order, regardless of their original order in the input.
 By printing out HTML, you can pipe `candle` output to `candle` again, and build
 up a chain of operations:
 
-    echo "<h1 id='cool' class='bar'>foo <span>and foo</span></h1>" | candle 'h1 {html}' | candle 'span {text}'
+    $ echo "<h1 id='cool' class='bar'>foo <span>and foo</span></h1>" | candle 'h1 {html}' | candle 'span {text}'
     and foo
 
 In this case, `candle 'span {text}'` would get the same result without piping,
@@ -60,24 +60,21 @@ like and want to poke at it.
 
 Now let's parse a real webpage:
 
-    curl https://daringfireball.net | candle '.article h1 a {text}'
-
+    $ curl https://daringfireball.net | candle '.article h1 a {text}'
     Apple Addresses Siri Privacy Protections
     Siri, Privacy, and Trust
     Superhuman and Email Privacy
 
 We can show the `href` attribute instead:
 
-    curl https://daringfireball.net | candle '.article h1 a attr{href}'
-
+    $ curl https://daringfireball.net | candle '.article h1 a attr{href}'
     https://daringfireball.net/2019/08/apple_siri_privacy
     https://daringfireball.net/2019/08/siri_privacy_trust
     https://daringfireball.net/2019/07/superhuman_and_email_privacy
 
 Or we can show both the text and the `href`:
 
-    curl https://daringfireball.net | candle '.article h1 a {text}, .article h1 a attr{href}'
-
+    $ curl https://daringfireball.net | candle '.article h1 a {text}, .article h1 a attr{href}'
     Apple Addresses Siri Privacy Protections
     https://daringfireball.net/2019/08/apple_siri_privacy
     Siri, Privacy, and Trust
@@ -87,8 +84,7 @@ Or we can show both the text and the `href`:
 
 To format the HTML prettily:
 
-    curl https://daringfireball.net | candle 'html {html}'
-
+    $ curl https://daringfireball.net | candle 'html {html}'
     <html lang="en" class="daringfireball-net">
       <head>
         <meta charset="UTF-8">
