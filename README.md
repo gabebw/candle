@@ -45,8 +45,8 @@ Let's print out some HTML:
       </span>
     </h1>
 
-Note that the HTML is pretty-printed for you. Attributes are always shown in
-alphabetical order, regardless of their original order in the input.
+Note that the HTML is pretty-printed for you. Attributes can be shown in any
+order, regardless of their original order in the input.
 
 By printing out HTML, you can pipe `candle` output to `candle` again, and build
 up a chain of operations:
