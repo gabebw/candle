@@ -26,6 +26,7 @@ struct Finder<'a> {
 }
 
 const NUMBER_OF_SPACES_PER_LEVEL: usize = 2;
+// https://developer.mozilla.org/en-US/docs/Glossary/empty_element
 const SELF_CLOSING_ELEMENTS: &[&str; 16] = &[
     "area",
     "base",
@@ -54,8 +55,8 @@ fn print_tree(element: Option<ElementRef>, indent_level: usize) -> String {
         let top = element.value();
         let tag_name: &str = &format!("{}", top.name.local);
 
-        if element.children().peekable().peek().is_none() && SELF_CLOSING_ELEMENTS.contains(&tag_name) {
-            // The tag has no children and is self-closing
+        if SELF_CLOSING_ELEMENTS.contains(&tag_name) {
+            // The tag is self-closing and can't have any children
             s.push_str(&format!("{}{:?}</{}>", indent, top, tag_name));
         } else {
             // Opening tag, with attributes
