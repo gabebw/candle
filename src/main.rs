@@ -25,11 +25,12 @@ struct Finder<'a> {
     operation: FinderOperation<'a>,
 }
 
+const NUMBER_OF_SPACES_PER_LEVEL: usize = 2;
+
 fn print_tree(element: Option<ElementRef>, indent_level: usize) -> String {
     let mut s = String::new();
-    let number_of_spaces_per_level = 2;
-    let indent = format!("{:n$}", "", n=(indent_level * number_of_spaces_per_level));
-    let indent_plus_one = format!("{:n$}", "", n=(indent_level + 1) * number_of_spaces_per_level);
+    let indent = format!("{:n$}", "", n=(indent_level * NUMBER_OF_SPACES_PER_LEVEL));
+    let indent_plus_one = format!("{:n$}", "", n=(indent_level + 1) * NUMBER_OF_SPACES_PER_LEVEL);
     if let Some(element) = element {
         // `element` is https://docs.rs/scraper/0.10.1/scraper/element_ref/struct.ElementRef.html
         let top = element.value();
