@@ -123,7 +123,7 @@ fn read_from<R: Read>(mut reader: R) -> Option<String> {
 }
 
 fn read_inputs() -> Result<Inputs, String> {
-    let selector = env::args().nth(1).ok_or("Usage: candle SELECTOR")?;
+    let selector = env::args().nth(1).unwrap_or_else(|| "".to_string());
     let html = read_from(io::stdin()).ok_or("Error: couldn't read from STDIN")?;
     Ok(Inputs { selector, html })
 }
@@ -184,43 +184,55 @@ fn select_all(html: Html, finders: &[Finder]) -> Vec<String> {
     results
 }
 
-fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
-    let re = Regex::new(r"(?x)
-        (?P<selector>[^{}]+)
-        (?:
-            (?P<text>\{text\})
-            |
-            (?P<html>\{html\})
-            |
-            (attr\{
-                (?P<attr>[^}]+)
-            \})
-        )
-        [,]?\s*
-    ").unwrap();
-    let mut finders: Vec<Finder> = Vec::new();
-    for c in re.captures_iter(&inputs.selector) {
-        let selector_str = c.name("selector").unwrap().as_str();
-        let operation = if c.name("text").is_some() {
-            FinderOperation::Text
-        } else if c.name("html").is_some() {
-            FinderOperation::Html
-        } else if let Some(attr) = c.name("attr").map(|a| a.as_str()) {
-            FinderOperation::Attr(attr)
-        } else {
-            // This should never happen, because we're guaranteed to have found a match for at
-            // least one of the groups.
-            panic!("Something went wrong, please provide {{text}}, {{html}}, or attr{{NAME}}");
-        };
-
+fn finders<'a>(inputs: &'a Inputs) -> Result<Vec<Finder<'a>>, String> {
+    if inputs.selector.is_empty() {
         let finder = Finder {
-            operation,
-            selector: Selector::parse(selector_str)
-                .map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?,
+            selector: Selector::parse("html").unwrap(),
+            operation: FinderOperation::Html
         };
-        finders.push(finder);
-    }
+        Ok(vec![finder])
+    } else {
+        let re = Regex::new(r"(?x)
+            (?P<selector>[^{}]+)
+            (?:
+                (?P<text>\{text\})
+                |
+                (?P<html>\{html\})
+                |
+                (attr\{
+                    (?P<attr>[^}]+)
+                \})
+            )
+            [,]?\s*
+        ").unwrap();
+        let mut finders: Vec<Finder> = Vec::new();
+        for c in re.captures_iter(&inputs.selector) {
+            let selector_str = c.name("selector").unwrap().as_str();
+            let operation = if c.name("text").is_some() {
+                FinderOperation::Text
+            } else if c.name("html").is_some() {
+                FinderOperation::Html
+            } else if let Some(attr) = c.name("attr").map(|a| a.as_str()) {
+                FinderOperation::Attr(attr)
+            } else {
+                // This should never happen, because we're guaranteed to have found a match for at
+                // least one of the groups.
+                panic!("Something went wrong, please provide {{text}}, {{html}}, or attr{{NAME}}");
+            };
 
+            let finder = Finder {
+                operation,
+                selector: Selector::parse(selector_str)
+                    .map_err(|e| format!("Bad CSS selector: {:?}", e.kind))?,
+            };
+            finders.push(finder);
+        }
+        Ok(finders)
+    }
+}
+
+fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
+    let finders = finders(&inputs)?;
     if finders.is_empty() {
         Err("Please specify {text}, {html}, or attr{ATTRIBUTE}".to_string())
     } else {

@@ -82,9 +82,9 @@ Or we can show both the text and the `href`:
     Superhuman and Email Privacy
     https://daringfireball.net/2019/07/superhuman_and_email_privacy
 
-To format the HTML prettily:
+To format the HTML prettily, call it without arguments:
 
-    $ curl https://daringfireball.net | candle 'html {html}'
+    $ curl https://daringfireball.net | candle
     <html lang="en" class="daringfireball-net">
       <head>
         <meta charset="UTF-8"></meta>
@@ -97,6 +97,8 @@ To format the HTML prettily:
         <link rel="mask-icon" color="#4a525a" href="/graphics/dfstar.svg"></link>
 
     ...and so on...
+
+(This is exactly equivalent to calling `candle 'html {html}'`.)
 
 ## Inspiration
 
