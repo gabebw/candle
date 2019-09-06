@@ -323,6 +323,82 @@ mod test {
     }
 
     #[test]
+    fn test_trim_start_n_exact_spaces(){
+        let four_spaces = format!("{:n$}", "", n = 4);
+        let input = format!("{}there", four_spaces);
+        let result = tree::trim_start_n(&input, 4);
+
+        assert_eq!(result, "there");
+    }
+
+    #[test]
+    fn test_trim_start_n_extra_space(){
+        let five_spaces = format!("{:n$}", "", n = 5);
+        let input = format!("{}there", five_spaces);
+        let result = tree::trim_start_n(&input, 4);
+
+        assert_eq!(result, " there");
+    }
+
+    #[test]
+    fn test_trim_start_n_trimming_more_than_the_length_of_the_string(){
+        let one_space = " ";
+        let input = format!("{}there", one_space);
+        let result = tree::trim_start_n(&input, 10);
+
+        assert_eq!(result, "there");
+    }
+
+    #[test]
+    fn test_printing_indented_js(){
+        let input = r#"
+            <body>
+            <div>
+                <div>
+                <script>
+                    var foo = "foo";
+                        var bar = "bar";
+                function x(){
+                      return true;
+                    }
+                </script>
+                </div>
+            </div>
+            </body>
+        "#;
+        let output = r#"
+<body>
+  <div>
+    <div>
+      <script>
+        var foo = "foo";
+            var bar = "bar";
+        function x(){
+          return true;
+        }
+      </script>
+    </div>
+  </div>
+</body>"#.trim_start().to_string();
+        let selector = "body {html}";
+        let result = parse(build_inputs(input, selector));
+        assert_eq!(result, Ok(vec![output]));
+    }
+
+    #[test]
+    fn test_empty_script_tag(){
+        let input = r#"<body><script></script></body>"#;
+        let output = r#"
+<body>
+  <script>
+  </script>
+</body>"#.trim_start().to_string();
+        let selector = "body {html}";
+        let result = parse(build_inputs(input, selector));
+        assert_eq!(result, Ok(vec![output]));
+    }
+
+    #[test]
     fn test_bad_operation() {
         let html = r#"
             <!DOCTYPE html>

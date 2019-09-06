@@ -25,11 +25,24 @@ fn is_present(s: &str) -> bool {
     s.chars().any(|c| !c.is_whitespace())
 }
 
+fn presence(s: &str) -> Option<&str> {
+    if is_present(s) {
+        Some(s)
+    } else {
+        None
+    }
+}
+
+// Given a line with N spaces of indentation, return N.
+fn find_indentation(s: &str) -> usize {
+    s.chars().take_while(|c| c.is_ascii_whitespace()).count()
+}
+
 fn indentation(level: usize) -> String {
     format!("{:n$}", "", n=level * NUMBER_OF_SPACES_PER_LEVEL)
 }
 
-fn add_children(s: &mut String, element: ElementRef, indent_level: usize) {
+fn add_children(s: &mut String, element: ElementRef, tag_name: &str, indent_level: usize) {
     let indent_plus_one = indentation(indent_level + 1);
 
     for child in element.children() {
@@ -48,12 +61,45 @@ fn add_children(s: &mut String, element: ElementRef, indent_level: usize) {
             },
             Node::Text(t) => {
                 if is_present(&t.text) {
-                    s.push_str(&format!("\n{}{}", indent_plus_one, t.text))
+                    if tag_name == "script" {
+                        s.push_str("\n");
+                        s.push_str(&indented_script_text(&t.text, &indent_plus_one));
+                    } else {
+                        s.push_str(&format!("\n{}{}", indent_plus_one, t.text));
+                    }
                 }
             },
             _ => {},
         }
     }
+}
+
+// Trim up to N characters from the start. Will stop trimming if it runs into non-whitespace, or
+// once it's trimmed N characters.
+pub fn trim_start_n(s: &str, n: usize) -> String {
+    let mut i = 0;
+    let mut new = String::new();
+    let mut stop_trimming = false;
+    for c in s.chars() {
+        if c.is_whitespace() && i < n && !stop_trimming {
+            // keep going
+            i += 1;
+        } else {
+            stop_trimming = true;
+            new.push(c);
+        }
+    }
+    new
+}
+
+fn indented_script_text(s: &str, indent: &str) -> String {
+    let lines: Vec<_> = s.trim_end().lines().filter_map(presence).collect();
+    let script_indentation_spaces = find_indentation(lines[0]);
+    let indented: Vec<String> = lines
+        .iter()
+        .map(|l| format!("{}{}", indent, trim_start_n(l, script_indentation_spaces)))
+        .collect();
+    indented.join("\n")
 }
 
 pub fn print_tree(element: ElementRef, indent_level: usize) -> String {
@@ -69,7 +115,7 @@ pub fn print_tree(element: ElementRef, indent_level: usize) -> String {
     } else {
         // Opening tag, with attributes
         s.push_str(&format!("{}{:?}", indent, top));
-        add_children(&mut s, element, indent_level);
+        add_children(&mut s, element, tag_name, indent_level);
         // Closing tag
         s.push_str(&format!("\n{}</{}>", indent, tag_name));
     }
