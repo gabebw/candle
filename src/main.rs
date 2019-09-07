@@ -110,10 +110,8 @@ fn select_all(html: Html, finders: &[Finder]) -> Vec<String> {
     let mut results: Vec<String> = Vec::new();
     for node in html.tree.nodes().by_ref() {
         if let Some(element) = ElementRef::wrap(node) {
-            if element.parent().is_some() {
-                for value in finders.iter().filter_map(|finder| finder.match_and_apply(&element)) {
-                    results.push(value);
-                }
+            for value in finders.iter().filter_map(|finder| finder.match_and_apply(&element)) {
+                results.push(value);
             }
         }
     }
