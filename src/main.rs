@@ -1,11 +1,13 @@
 use encoding_rs::Encoding;
 use isatty::stdin_isatty;
 use regex::Regex;
-use scraper::{ElementRef, Html, Node, Selector};
+use scraper::{ElementRef, Html, Selector};
 use std::cmp;
 use std::env;
 use std::io::{self, ErrorKind, Read, Write};
 use std::process;
+
+mod tree;
 
 struct Inputs {
     selector: String,
@@ -25,78 +27,12 @@ struct Finder<'a> {
     operation: FinderOperation<'a>,
 }
 
-const NUMBER_OF_SPACES_PER_LEVEL: usize = 2;
-// https://developer.mozilla.org/en-US/docs/Glossary/empty_element
-const SELF_CLOSING_ELEMENTS: &[&str; 16] = &[
-    "area",
-    "base",
-    "br",
-    "col",
-    "command",
-    "embed",
-    "hr",
-    "img",
-    "input",
-    "keygen",
-    "link",
-    "meta",
-    "param",
-    "source",
-    "track",
-    "wbr"
-];
-
-fn print_tree(element: ElementRef, indent_level: usize) -> String {
-    let mut s = String::new();
-    let indent = format!("{:n$}", "", n=(indent_level * NUMBER_OF_SPACES_PER_LEVEL));
-    let indent_plus_one = format!("{:n$}", "", n=(indent_level + 1) * NUMBER_OF_SPACES_PER_LEVEL);
-    // `element` is https://docs.rs/scraper/0.10.1/scraper/element_ref/struct.ElementRef.html
-    let top = element.value();
-    let tag_name: &str = &format!("{}", top.name.local);
-
-    if SELF_CLOSING_ELEMENTS.contains(&tag_name) {
-        // The tag is self-closing and can't have any children
-        s.push_str(&format!("{}{:?}</{}>", indent, top, tag_name));
-    } else {
-        // Opening tag, with attributes
-        s.push_str(&format!("{}{:?}", indent, top));
-
-        for child in element.children() {
-            // Each `child` is a NodeRef<Node>:
-            // https://docs.rs/ego-tree/0.3.0/ego_tree/struct.NodeRef.html
-            // https://docs.rs/scraper/0.10.1/scraper/node/enum.Node.html
-            match child.value() {
-                Node::Comment(c) => {
-                    s.push_str(&format!("\n{}<!-- {} -->", indent_plus_one, c.comment.trim()))
-                },
-                Node::Element(_) => {
-                    if let Some(element) = ElementRef::wrap(child) {
-                        s.push_str("\n");
-                        s.push_str(&print_tree(element, indent_level + 1));
-                    }
-                },
-                Node::Text(t) => {
-                    // Ignore this text if it's just whitespace
-                    if ! t.text.trim().is_empty() {
-                        s.push_str(&format!("\n{}{}", indent_plus_one, t.text))
-                    }
-                },
-                _ => {},
-            }
-        }
-
-        // Closing tag
-        s.push_str(&format!("\n{}</{}>", indent, tag_name));
-    }
-    s
-}
-
 impl<'a> Finder<'a> {
     fn apply(&self, element: &ElementRef) -> Option<String> {
         match self.operation {
             FinderOperation::Text => Some(element.text().collect()),
             FinderOperation::Attr(attr) => element.value().attr(attr).map(|s| s.to_string()),
-            FinderOperation::Html => Some(print_tree(*element, 0))
+            FinderOperation::Html => Some(tree::print_tree(*element, 0))
         }
     }
 }
