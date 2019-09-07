@@ -35,7 +35,7 @@ fn presence(s: &str) -> Option<&str> {
 
 // Given a line with N spaces of indentation, return N.
 fn find_indentation(s: &str) -> usize {
-    s.chars().take_while(|c| c.is_ascii_whitespace()).count()
+    s.chars().take_while(|c| c.is_whitespace()).count()
 }
 
 fn indentation(level: usize) -> String {
