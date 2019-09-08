@@ -9,6 +9,8 @@ use std::process;
 
 mod tree;
 
+const BAD_FINDER: &str = "Something went wrong, please provide {text}, {html}, or attr{NAME}";
+
 struct Inputs {
     selector: String,
     html: String,
@@ -149,7 +151,7 @@ fn finders<'a>(inputs: &'a Inputs) -> Result<Vec<Finder<'a>>, String> {
             } else {
                 // This should never happen, because we're guaranteed to have found a match for at
                 // least one of the groups.
-                panic!("Something went wrong, please provide {{text}}, {{html}}, or attr{{NAME}}");
+                panic!(BAD_FINDER);
             };
 
             let finder = Finder {
@@ -166,7 +168,7 @@ fn finders<'a>(inputs: &'a Inputs) -> Result<Vec<Finder<'a>>, String> {
 fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
     let finders = finders(&inputs)?;
     if finders.is_empty() {
-        Err("Please specify {text}, {html}, or attr{ATTRIBUTE}".to_string())
+        Err(BAD_FINDER.to_string())
     } else {
         let document = Html::parse_document(&inputs.html);
         Ok(select_all(document, &finders))
@@ -404,10 +406,7 @@ mod test {
         "#;
         let selector = "h1";
         let result = parse(build_inputs(html, selector));
-        assert_eq!(
-            result,
-            Err("Please specify {text}, {html}, or attr{ATTRIBUTE}".to_string())
-        );
+        assert_eq!(result, Err(BAD_FINDER.to_string()));
     }
 
     #[test]
