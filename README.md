@@ -107,6 +107,11 @@ To format the HTML prettily, call it without arguments:
 
 (This is exactly equivalent to calling `candle 'html {html}'`.)
 
+[`bat`](https://github.com/sharkdp/bat) is an excellent tool to color the
+output. (Install it with `brew install bat`.)
+
+    $ curl https://daringfireball.net | candle | bat
+
 ## Inspiration
 
 The idea for this as well as the syntax was taken from
