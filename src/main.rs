@@ -157,13 +157,14 @@ fn finders<'a>(inputs: &'a Inputs) -> Result<Vec<Finder<'a>>, String> {
             } else {
                 // This should never happen, because we're guaranteed to have found a match for at
                 // least one of the groups.
-                panic!(BAD_FINDER);
+                panic!("{}", BAD_FINDER);
             };
 
             let finder = Finder {
                 operation,
-                selector: Selector::parse(selector_str)
-                    .map_err(|e| format!("'{}' is a bad CSS selector: {:?}", selector_str.trim(), e.kind))?,
+                selector: Selector::parse(selector_str).map_err(|e| {
+                    format!("'{}' is a bad CSS selector: {:?}", selector_str.trim(), e)
+                })?,
             };
             finders.push(finder);
         }
