@@ -35,7 +35,7 @@ impl<'a> Finder<'a> {
             match self.operation {
                 FinderOperation::Text => Some(element.text().collect()),
                 FinderOperation::Attr(attr) => element.value().attr(attr).map(|s| s.to_string()),
-                FinderOperation::Html => Some(tree::print_tree(*element, 0))
+                FinderOperation::Html => Some(tree::print_tree(*element, 0)),
             }
         } else {
             None
@@ -95,7 +95,7 @@ fn main() {
                 for r in result {
                     cleanly_write(&r.trim());
                 }
-            },
+            }
             Err(e) => {
                 eprintln!("{}", e);
                 process::exit(1);
@@ -111,7 +111,10 @@ fn main() {
 fn select_all(html: Html, finders: &[Finder]) -> Vec<String> {
     let mut results: Vec<String> = Vec::new();
     for element in html.tree.nodes().filter_map(ElementRef::wrap) {
-        for value in finders.iter().filter_map(|finder| finder.match_and_apply(&element)) {
+        for value in finders
+            .iter()
+            .filter_map(|finder| finder.match_and_apply(&element))
+        {
             results.push(value);
         }
     }
@@ -122,11 +125,12 @@ fn finders<'a>(inputs: &'a Inputs) -> Result<Vec<Finder<'a>>, String> {
     if inputs.selector.is_empty() {
         let finder = Finder {
             selector: Selector::parse("html").unwrap(),
-            operation: FinderOperation::Html
+            operation: FinderOperation::Html,
         };
         Ok(vec![finder])
     } else {
-        let re = Regex::new(r"(?x)
+        let re = Regex::new(
+            r"(?x)
             (?P<selector>[^{}]+)
             (?:
                 (?P<text>\{text\})
@@ -138,7 +142,9 @@ fn finders<'a>(inputs: &'a Inputs) -> Result<Vec<Finder<'a>>, String> {
                 \})
             )
             [,]?\s*
-        ").unwrap();
+        ",
+        )
+        .unwrap();
         let mut finders: Vec<Finder> = Vec::new();
         for c in re.captures_iter(&inputs.selector) {
             let selector_str = c.name("selector").unwrap().as_str();
@@ -177,8 +183,8 @@ fn parse(inputs: Inputs) -> Result<Vec<String>, String> {
 
 #[cfg(test)]
 mod test {
-    use std::io::Cursor;
     use super::*;
+    use std::io::Cursor;
 
     #[test]
     fn test_showing_inner_text() {
@@ -277,7 +283,9 @@ mod test {
     </strong>
   </i>
   <!-- hello -->
-</h1>"#.trim_start().to_string();
+</h1>"#
+            .trim_start()
+            .to_string();
         assert_eq!(result, Ok(vec![expected_result]));
     }
 
@@ -316,12 +324,14 @@ mod test {
   <div>
     bar
   </div>
-</body>"#.trim_start().to_string();
+</body>"#
+            .trim_start()
+            .to_string();
         assert_eq!(result, Ok(vec![expected_result]));
     }
 
     #[test]
-    fn test_trim_start_n_exact_spaces(){
+    fn test_trim_start_n_exact_spaces() {
         let four_spaces = format!("{:n$}", "", n = 4);
         let input = format!("{}there", four_spaces);
         let result = tree::trim_start_n(&input, 4);
@@ -330,7 +340,7 @@ mod test {
     }
 
     #[test]
-    fn test_trim_start_n_extra_space(){
+    fn test_trim_start_n_extra_space() {
         let five_spaces = format!("{:n$}", "", n = 5);
         let input = format!("{}there", five_spaces);
         let result = tree::trim_start_n(&input, 4);
@@ -339,7 +349,7 @@ mod test {
     }
 
     #[test]
-    fn test_trim_start_n_trimming_more_than_the_length_of_the_string(){
+    fn test_trim_start_n_trimming_more_than_the_length_of_the_string() {
         let one_space = " ";
         let input = format!("{}there", one_space);
         let result = tree::trim_start_n(&input, 10);
@@ -348,7 +358,7 @@ mod test {
     }
 
     #[test]
-    fn test_printing_indented_js(){
+    fn test_printing_indented_js() {
         let input = r#"
             <body>
             <div>
@@ -377,20 +387,24 @@ mod test {
       </script>
     </div>
   </div>
-</body>"#.trim_start().to_string();
+</body>"#
+            .trim_start()
+            .to_string();
         let selector = "body {html}";
         let result = parse(build_inputs(input, selector));
         assert_eq!(result, Ok(vec![output]));
     }
 
     #[test]
-    fn test_empty_script_tag(){
+    fn test_empty_script_tag() {
         let input = r#"<body><script></script></body>"#;
         let output = r#"
 <body>
   <script>
   </script>
-</body>"#.trim_start().to_string();
+</body>"#
+            .trim_start()
+            .to_string();
         let selector = "body {html}";
         let result = parse(build_inputs(input, selector));
         assert_eq!(result, Ok(vec![output]));
