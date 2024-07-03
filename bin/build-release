@@ -3,22 +3,37 @@
 set -eo pipefail
 
 candle_version=$(cargo metadata --no-deps --format-version 1 | jq -r '.packages[0].version')
-name="candle-${candle_version}"
+
 
 export MACOSX_DEPLOYMENT_TARGET=10.7
-export TARGET=x86_64-apple-darwin
 
-cargo build --release --target "$TARGET" --locked
-cargo test
+for target in x86_64-apple-darwin aarch64-apple-darwin
+do
+  if ! rustup target list | grep -qF "$target"; then
+    rustup target add "$target"
+  fi
+  export TARGET=$target
 
-mkdir -p releases
-rm -rf releases/"$name"
-cd releases
-mkdir "$name"
-cp ../target/$TARGET/release/candle "$name"
-tar czf "$name".tar.gz "$name"
-rm -rf "$name"
+  echo "Building $target..."
 
-echo "Version: $candle_version"
-echo "Sha256 sum:"
-sha256sum "$name".tar.gz | cut -d ' ' -f1
+  # suffix examples: x86_64, aarch64
+  suffix=$(echo $target | sed 's/-apple-darwin//')
+
+  cargo build --release --target "$TARGET" --locked >/dev/null
+  cargo test > /dev/null
+
+  name="candle-${candle_version}-${suffix}"
+  mkdir -p releases
+  rm -rf releases/"$name"
+  pushd releases >/dev/null
+  mkdir "$name"
+  cp ../target/$TARGET/release/candle "$name"
+  tar czf "$name".tar.gz "$name"
+  rm -rf "$name"
+
+  echo "Version: $candle_version"
+  echo -n "Sha256 sum: "
+  shasum -a 256 "$name".tar.gz | cut -d ' ' -f1
+  echo
+  popd >/dev/null
+done

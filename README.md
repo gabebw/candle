@@ -112,6 +112,12 @@ output. (Install it with `brew install bat`.)
 
     $ curl https://daringfireball.net | candle | bat
 
+## Development
+
+To build x86 and arm binaries, along with SHA256 sums suitable for using with the [candle formula](https://github.com/gabebw/homebrew-formulae/blob/main/Formula/candle.rb), run:
+
+        ./bin/build-release
+
 ## Inspiration
 
 The idea for this as well as the syntax was taken from
